@@ -2,15 +2,15 @@ import "./style.css";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import mapboxgl, { Map, type LngLatLike } from "mapbox-gl";
-import { ColumnLayer, ScatterplotLayer } from "@deck.gl/layers";
-import { Deck, type Accessor, type Color } from "@deck.gl/core";
+import mapboxgl, { type LngLatLike } from "mapbox-gl";
+import { ColumnLayer } from "@deck.gl/layers";
+import { type Accessor, type Color } from "@deck.gl/core";
 
 const DEFAULT_MAP_POSITION: LngLatLike = [-2.244, 53.478];
 const DEFAULT_MAP_ZOOM = 17.6;
 
 const LAND_COLOR = "#d59ee3";
-const TARGET_COLOR: number[] & Accessor<any, Color> = [237, 52, 86, 100];
+const TARGET_COLOR: number[] & Accessor<unknown, Color> = [237, 52, 86, 100];
 
 (async () => {
   mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -25,7 +25,7 @@ const TARGET_COLOR: number[] & Accessor<any, Color> = [237, 52, 86, 100];
         showRoadLabels: false,
         showPointOfInterestLabels: false,
         showAdminBoundaries: true,
-        colorLand: "#d59ee3",
+        colorLand: LAND_COLOR,
       },
     },
     center: DEFAULT_MAP_POSITION,
@@ -42,7 +42,7 @@ const TARGET_COLOR: number[] & Accessor<any, Color> = [237, 52, 86, 100];
   map.addControl(nav, "top-right");
 
   map.once("load", () => {
-    const data = [{ position: [-2.246, 53.47805], height: 200, label: "I work here!" }];
+    const data = [{ position: [-2.246, 53.47805], height: 200 }];
     const overlay = new MapboxOverlay({
       interleaved: true,
       layers: [
