@@ -1,10 +1,8 @@
-import biomePlugin from "vite-plugin-biome";
+import { defineConfig } from "vite";
 
-export default {
-	plugins: [
-		biomePlugin({
-			mode: "check",
-			applyFixes: true,
-		}),
-	],
-};
+export default defineConfig({
+	server: {
+		port: 8080,
+		open: true,
+	},
+});
