@@ -2,15 +2,43 @@ import "./style.css";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import mapboxgl, { type LngLatLike } from "mapbox-gl";
+import mapboxgl, { Map, type LngLatLike, type RainSpecification } from "mapbox-gl";
 import { ColumnLayer } from "@deck.gl/layers";
 import { type Accessor, type Color } from "@deck.gl/core";
+import { ButtonControl } from "./controls/ButtonControl";
 
 const DEFAULT_MAP_POSITION: LngLatLike = [-2.244, 53.478];
-const DEFAULT_MAP_ZOOM = 17.6;
+const DEFAULT_MAP_ZOOM = 17;
 
 const LAND_COLOR = "#d59ee3";
-const TARGET_COLOR: number[] & Accessor<unknown, Color> = [237, 52, 86, 100];
+const TARGET_COLOR: number[] & Accessor<unknown, Color> = [255, 255, 255, 100];
+const targetTooltip = {
+  html: `<img src="https://cdn.prod.website-files.com/67a4c861c36a0d39ecd11030/67ab7c5d1af0141539d118ec_rfa-logo-inline-colour-dark-RGB.svg" width="140px" height="75px"/>`,
+  style: {
+    backgroundColor: "#f5e9cd",
+    padding: "0px 14px",
+    borderRadius: "6px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+    maxWidth: "260px",
+  },
+};
+
+const RAIN_OPTIONS = {
+  density: 1,
+  intensity: 1,
+  color: "#c132ce",
+  opacity: 0.19,
+  "center-thinning": 0,
+  direction: [0, 50],
+  "droplet-size": [1, 10],
+  "distortion-strength": 0.5,
+  vignette: 0.5,
+  "vignette-color": "#9b38ac",
+} as RainSpecification;
+
+// initial rain control state
+let isRaining = false;
+const rainButtonLabel = () => (isRaining ? "☀️" : "🌧️");
 
 (async () => {
   mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -20,7 +48,7 @@ const TARGET_COLOR: number[] & Accessor<unknown, Color> = [237, 52, 86, 100];
     style: "mapbox://styles/mapbox/standard",
     config: {
       basemap: {
-        lightPreset: "dawn",
+        lightPreset: "dusk",
         theme: "default",
         showRoadLabels: false,
         showPointOfInterestLabels: false,
@@ -34,12 +62,7 @@ const TARGET_COLOR: number[] & Accessor<unknown, Color> = [237, 52, 86, 100];
     bearing: 150,
   });
 
-  const nav = new mapboxgl.NavigationControl({
-    showCompass: true,
-    showZoom: true,
-  });
-
-  map.addControl(nav, "top-right");
+  addNavigationControls(map);
 
   map.once("load", () => {
     const data = [{ position: [-2.246, 53.47805], height: 200 }];
@@ -50,7 +73,7 @@ const TARGET_COLOR: number[] & Accessor<unknown, Color> = [237, 52, 86, 100];
           id: "highlight-cylinder",
           data,
           diskResolution: 24,
-          radius: 8,
+          radius: 4,
           extruded: true,
           elevationScale: 1,
           getPosition: (d) => d.position,
@@ -61,34 +84,38 @@ const TARGET_COLOR: number[] & Accessor<unknown, Color> = [237, 52, 86, 100];
         }),
       ],
       getTooltip: ({ object }) => {
-        return (
-          object && {
-            html: `<img src="https://cdn.prod.website-files.com/67a4c861c36a0d39ecd11030/67ab7c5d1af0141539d118ec_rfa-logo-inline-colour-dark-RGB.svg" width="140px" height="75px"/>`,
-            style: {
-              backgroundColor: "#f5e9cd",
-              padding: "0px 14px",
-              borderRadius: "6px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
-              maxWidth: "260px",
-            },
-          }
-        );
+        return object && targetTooltip;
       },
     });
 
     map.addControl(overlay);
-
-    map.setRain({
-      density: 1,
-      intensity: 1,
-      color: "#c132ce",
-      opacity: 0.19,
-      "center-thinning": 0,
-      direction: [0, 50],
-      "droplet-size": [1, 10],
-      "distortion-strength": 0.5,
-      vignette: 0.5,
-      "vignette-color": "#9b38ac",
+    const rainControl = new ButtonControl({
+      label: rainButtonLabel(),
+      title: "Toggle rain",
+      onClick: (map, button) => {
+        isRaining = !isRaining;
+        if (isRaining) {
+          map.setRain(RAIN_OPTIONS);
+          button.textContent = rainButtonLabel();
+          button.classList.remove("is-off");
+        } else {
+          map.setRain(null);
+          button.textContent = rainButtonLabel();
+          button.classList.add("is-off");
+        }
+      },
     });
+
+    map.addControl(rainControl, "top-right");
   });
 })();
+
+function addNavigationControls(map: Map) {
+  const nav = new mapboxgl.NavigationControl({
+    showCompass: true,
+    showZoom: true,
+    visualizePitch: true,
+  });
+
+  map.addControl(nav, "top-right");
+}
